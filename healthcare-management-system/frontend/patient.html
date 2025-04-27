@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Patient Dashboard - Healthcare Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <header class="mb-6 flex justify-between items-center">
+    <h1 class="text-2xl font-semibold">Patient Dashboard</h1>
+    <button id="logoutBtn" class="text-red-600 hover:underline">Logout</button>
+  </header>
+
+  <section class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto space-y-6">
+    <div>
+      <h2 class="text-xl font-semibold mb-2">Your Health Data</h2>
+      <pre id="healthData" class="bg-gray-100 p-4 rounded-md font-mono text-sm max-h-64 overflow-auto"></pre>
+      <p id="noDataMsg" class="text-gray-500"></p>
+    </div>
+
+    <div>
+      <h2 class="text-xl font-semibold mb-2">Share Your Health Data</h2>
+      <button id="shareBtn" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">Get Encrypted Data to Share</button>
+      <textarea id="shareData" rows="6" readonly class="w-full mt-2 border border-gray-300 rounded-md p-2 font-mono text-sm"></textarea>
+    </div>
+  </section>
+
+  <script>
+    const logoutBtn = document.getElementById('logoutBtn');
+    const healthDataPre = document.getElementById('healthData');
+    const noDataMsg = document.getElementById('noDataMsg');
+    const shareBtn = document.getElementById('shareBtn');
+    const shareDataTextarea = document.getElementById('shareData');
+
+    logoutBtn.addEventListener('click', () => {
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+    });
+
+    async function fetchHealthData() {
+      const username = sessionStorage.getItem('username');
+      const password = sessionStorage.getItem('password');
+
+      try {
+        const response = await fetch('http://localhost:3000/patient/data', {
+          method: 'GET',
+          headers: {
+            'username': username,
+            'password': password
+          }
+        });
+        const result = await response.json();
+        if (response.ok) {
+          if (result.data) {
+            healthDataPre.textContent = JSON.stringify(result.data, null, 2);
+            noDataMsg.textContent = '';
+          } else {
+            healthDataPre.textContent = '';
+            noDataMsg.textContent = 'No health data available.';
+          }
+        } else {
+          healthDataPre.textContent = '';
+          noDataMsg.textContent = result.error || 'Error fetching data.';
+        }
+      } catch (error) {
+        healthDataPre.textContent = '';
+        noDataMsg.textContent = 'Network error. Please try again.';
+      }
+    }
+
+    shareBtn.addEventListener('click', async () => {
+      shareDataTextarea.value = '';
+      const username = sessionStorage.getItem('username');
+      const password = sessionStorage.getItem('password');
+
+      try {
+        const response = await fetch('http://localhost:3000/patient/share-data', {
+          method: 'GET',
+          headers: {
+            'username': username,
+            'password': password
+          }
+        });
+        const result = await response.json();
+        if (response.ok) {
+          shareDataTextarea.value = result.encryptedData;
+        } else {
+          shareDataTextarea.value = result.error || 'Error fetching share data.';
+        }
+      } catch (error) {
+        shareDataTextarea.value = 'Network error. Please try again.';
+      }
+    });
+
+    // Fetch health data on page load
+    fetchHealthData();
+  </script>
+</body>
+</html>
